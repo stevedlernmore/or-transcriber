@@ -38,10 +38,10 @@ if uploaded_file:
             audio_bytes = uploaded_file.getvalue()
             audio_file = BytesIO(audio_bytes)
             audio_file.name = uploaded_file.name
-
+            audio_file.seek(0)
             transcription_response = AI_client.audio.transcriptions.create(
                 model="whisper-1",
-                file=audio_file
+                file=(audio_file.name, audio_file, uploaded_file.type)
             )
             st.session_state.transcription_text = transcription_response.text
 
