@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+from io import BytesIO
 
 AI_client = OpenAI(api_key=st.secrets["OPEN_AI_KEY"])
 
@@ -34,9 +35,13 @@ if uploaded_file:
 
     if st.button("Transcribe"):
         with st.spinner("Transcribing via OpenAI Whisper API..."):
+            audio_bytes = uploaded_file.getvalue()
+            audio_file = BytesIO(audio_bytes)
+            audio_file.name = uploaded_file.name
+
             transcription_response = AI_client.audio.transcriptions.create(
                 model="whisper-1",
-                file=uploaded_file
+                file=audio_file
             )
             st.session_state.transcription_text = transcription_response.text
 
