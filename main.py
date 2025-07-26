@@ -1,14 +1,10 @@
 import streamlit as st
-import whisper
 from openai import OpenAI
-from streamlit_mic_recorder import mic_recorder
 
 AI_client = OpenAI(api_key=st.secrets["OPEN_AI_KEY"])
-model = whisper.load_model("base")
 
 st.title("🎙️🩺⛑️ Operating Room Transcriber")
 
-# Load procedure prompts from text file
 @st.cache_data
 def load_prompts(filename):
     prompts = {}
@@ -22,7 +18,6 @@ def load_prompts(filename):
 
 prompts = load_prompts("obgyn_prompts.txt")
 
-# Initialize session state
 if 'transcription_text' not in st.session_state:
     st.session_state.transcription_text = ""
 
@@ -38,38 +33,24 @@ if uploaded_file:
     st.audio(uploaded_file)
 
     if st.button("Transcribe"):
-        with open("temp_audio_file", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        with st.spinner("Transcribing locally with Whisper..."):
-            result = model.transcribe("temp_audio_file")
-            st.session_state.transcription_text = result["text"]
+        with st.spinner("Transcribing via OpenAI Whisper API..."):
+            transcription_response = AI_client.audio.transcriptions.create(
+                model="whisper-1",
+                file=(uploaded_file.name, uploaded_file, uploaded_file.type)
+            )
+            st.session_state.transcription_text = transcription_response.text
 
 if st.session_state.transcription_text:
     st.subheader("Transcription")
     st.text_area("Transcript:", st.session_state.transcription_text, height=200)
-
-st.subheader("Dictate Operative Details")
-audio = mic_recorder(
-    start_prompt="🎤 Click to start recording",
-    stop_prompt="🛑 Click to stop recording"
-)
-
-if audio:
-    with open("temp_dictation.wav", "wb") as f:
-        f.write(audio['bytes'])
-
-    with st.spinner("Transcribing dictated details..."):
-        dictated_result = model.transcribe("temp_dictation.wav")
-        st.session_state.dictated_text = dictated_result["text"]
-
-st.session_state.dictated_text = st.text_area("Dictated details (edit as necessary):", st.session_state.dictated_text, height=150)
 
 selected_procedure = st.selectbox(
     "Select Procedure or Type to Search:", 
     options=list(prompts.keys()),
     index=0
 )
+
+st.session_state.dictated_text = st.text_area("Dictated operative details (type here):", st.session_state.dictated_text, height=150)
 
 if selected_procedure:
     surgery_details = prompts[selected_procedure]
