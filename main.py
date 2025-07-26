@@ -36,7 +36,7 @@ if uploaded_file:
         with st.spinner("Transcribing via OpenAI Whisper API..."):
             transcription_response = AI_client.audio.transcriptions.create(
                 model="whisper-1",
-                file=(uploaded_file.name, uploaded_file, uploaded_file.type)
+                file=uploaded_file
             )
             st.session_state.transcription_text = transcription_response.text
 
